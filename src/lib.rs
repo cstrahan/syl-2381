@@ -1,4 +1,4 @@
-//! # `syl2381` API Documentation
+//! # `syl-2381` API Documentation
 
 /*
 Documentation:
