@@ -779,7 +779,9 @@ where
     fn get_holding(&mut self, reg: u16) -> f32 {
         let mut mreq = ModbusRequest::new(self.unit_id, ModbusProto::Rtu);
 
-        let mut request: heapless::Vec<u8, 256> = heapless::Vec::new();
+        // request is 8 bytes, response is 9 bytes.
+        // use 9 byte capacity so we can reuse buffer for response.
+        let mut request: heapless::Vec<u8, 9> = heapless::Vec::new();
         mreq.generate_get_holdings(reg, 2, &mut request)
             .expect("modbus gen");
 
@@ -820,7 +822,9 @@ where
 
         let mut mreq = ModbusRequest::new(self.unit_id, ModbusProto::Rtu);
 
-        let mut request: heapless::Vec<u8, 256> = heapless::Vec::new();
+        // request is 8 bytes, response is 6 bytes.
+        // use 8 byte capacity so we can reuse buffer for response.
+        let mut request: heapless::Vec<u8, 9> = heapless::Vec::new();
         mreq.generate_get_coils(reg, count as u16, &mut request)
             .expect("modbus gen");
 
@@ -834,7 +838,10 @@ where
         // As mentioned earlier, only expecting one byte.
         assert_eq!(byte_count, 1);
 
-        let mut response = Vec::new();
+        // reuse request buffer for response
+        request.clear();
+        let mut response = request;
+
         response.extend_from_slice(&buf);
         let len = guess_response_frame_len(&buf, ModbusProto::Rtu).expect("guess len");
 
