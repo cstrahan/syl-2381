@@ -711,13 +711,13 @@ where
         self.set_holding(regs::OUTY, val)
     }
 
-    /// Get main output mode (OUTY).
+    /// Get main output mode (COTY).
     pub fn get_output_type(&mut self) -> crate::Result<OutputType, UART> {
         let val = self.get_holding(regs::COTY)?;
         try_from_f32::<_, UART>(val)
     }
 
-    /// Set main output mode (OUTY).
+    /// Set main output mode (COTY).
     pub fn set_output_type(&mut self, val: OutputType) -> crate::Result<(), UART> {
         let val = val.into();
         self.set_holding(regs::COTY, val)
@@ -813,7 +813,7 @@ where
     /// All holding params on the SYL-2381 are f32,
     /// encoded as two consecutive values.
     fn set_holding(&mut self, reg: u16, val: f32) -> Result<(), UART> {
-        let values = values_to_f32(val);
+        let values = f32_to_values(val);
         let mut mreq = ModbusRequest::new(self.unit_id, ModbusProto::Rtu);
 
         let mut request: heapless::Vec<u8, 256> = heapless::Vec::new();
@@ -867,7 +867,7 @@ where
         let mut data: heapless::Vec<u16, 2> = heapless::Vec::new();
         mreq.parse_u16(&response, &mut data)?;
 
-        let val = f32_to_values(data[0], data[1]);
+        let val = values_to_f32(data[0], data[1]);
 
         Ok(val)
     }
@@ -954,7 +954,7 @@ where
 
 /// Read an f32 from two consecutive holding register values.
 #[inline(always)]
-fn f32_to_values(d0: u16, d1: u16) -> f32 {
+fn values_to_f32(d0: u16, d1: u16) -> f32 {
     let w0 = d0.to_be_bytes();
     let w1 = d1.to_be_bytes();
     let fbits = (w0[0] as u32) << 24 | (w0[1] as u32) << 16 | (w1[0] as u32) << 8 | (w1[1] as u32);
@@ -964,7 +964,7 @@ fn f32_to_values(d0: u16, d1: u16) -> f32 {
 
 /// Splits an f32 into two consecutive holding register values.
 #[inline(always)]
-fn values_to_f32(val: f32) -> [u16; 2] {
+fn f32_to_values(val: f32) -> [u16; 2] {
     let bytes = val.to_be_bytes();
     let d0 = (bytes[0] as u16) << 8 | bytes[1] as u16;
     let d1 = (bytes[2] as u16) << 8 | bytes[3] as u16;
@@ -980,8 +980,8 @@ mod tests {
     #[test]
     fn f32_representation_roundtrips() {
         let f = 10000.0;
-        let [d0, d1] = values_to_f32(f);
-        let f2 = f32_to_values(d0, d1);
+        let [d0, d1] = f32_to_values(f);
+        let f2 = values_to_f32(d0, d1);
         assert_eq!(f2, f);
     }
 
@@ -990,14 +990,14 @@ mod tests {
         // 10,000 encoded as two holding register values:
         let d0 = 0x461C;
         let d1 = 0x4000;
-        let val = f32_to_values(d0, d1);
+        let val = values_to_f32(d0, d1);
         assert_eq!(val, 10_000.0);
     }
 
     #[test]
     fn f32_write() {
         let val = 10_000.0;
-        let vals = values_to_f32(val);
+        let vals = f32_to_values(val);
         assert_eq!(vals, [0x461C, 0x4000]);
     }
 }
