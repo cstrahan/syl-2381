@@ -86,6 +86,12 @@ impl fmt::Debug for Status {
     }
 }
 
+impl fmt::Display for Status {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        <Self as fmt::Debug>::fmt(&self, f)
+    }
+}
+
 #[derive(Clone, Copy, fmt::Debug)]
 pub enum Filter {
     Disabled,
@@ -470,7 +476,7 @@ where
     }
 
     /// Get J1 status flag (AL1_STA).
-    pub fn get_al1_sta(&mut self) -> crate::Result<bool, UART> {
+    pub fn get_j1_status(&mut self) -> crate::Result<bool, UART> {
         let val = self.get_coils(r::AL1_STA, 1)?;
         Ok(val & 1 == 1)
     }
@@ -506,7 +512,7 @@ where
     }
 
     /// Get flag status (AT).
-    pub fn get_at(&mut self) -> crate::Result<Status, UART> {
+    pub fn get_status(&mut self) -> crate::Result<Status, UART> {
         let val = self.get_coils(r::AT, 8)?;
         Ok(Status(val))
     }
@@ -523,23 +529,23 @@ where
     }
 
     /// Get J1 ON temperature (AH1).
-    pub fn get_ah1(&mut self) -> crate::Result<f32, UART> {
+    pub fn get_j1_on_temp(&mut self) -> crate::Result<f32, UART> {
         self.get_holding(r::AH1)
     }
 
     /// Set J1 ON temperature (AH1).
-    pub fn set_ah1(&mut self, val: f32) -> Result<(), UART> {
+    pub fn set_j1_on_temp(&mut self, val: f32) -> Result<(), UART> {
         assert!(val > -1999.0 && val < 9999.0);
         self.set_holding(r::AH1, val)
     }
 
     /// Get J1 OFF temperature (AL1).
-    pub fn get_al1(&mut self) -> crate::Result<f32, UART> {
+    pub fn get_j1_off_temp(&mut self) -> crate::Result<f32, UART> {
         self.get_holding(r::AL1)
     }
 
     /// Set J1 OFF temperature (AL1).
-    pub fn set_al1(&mut self, val: f32) -> Result<(), UART> {
+    pub fn set_j1_off_temp(&mut self, val: f32) -> Result<(), UART> {
         assert!(val >= -1999.0 && val <= 9999.0);
         self.set_holding(r::AL1, val)
     }
@@ -613,7 +619,7 @@ where
     ///
     /// This is a time period setting (unit in seconds) that decides how often
     /// does the controller calculate and change its output.
-    pub fn get_ot(&mut self) -> crate::Result<f32, UART> {
+    pub fn get_control_cycle(&mut self) -> crate::Result<f32, UART> {
         self.get_holding(r::OT)
     }
 
@@ -621,7 +627,7 @@ where
     ///
     /// This is a time period setting (unit in seconds) that decides how often
     /// does the controller calculate and change its output.
-    pub fn set_ot(&mut self, val: f32) -> Result<(), UART> {
+    pub fn set_control_cycle(&mut self, val: f32) -> Result<(), UART> {
         assert!(val >= 1.0 && val <= 500.0);
         self.set_holding(r::SOUF, val)
     }
@@ -631,7 +637,7 @@ where
     /// NOTE: Stronger filtering increases the stability of
     /// the readout display, but causes more delay in the response to changes in
     /// temperature is a time period setting (unit in seconds) that decides how often
-    pub fn get_filt(&mut self) -> crate::Result<Filter, UART> {
+    pub fn get_filter(&mut self) -> crate::Result<Filter, UART> {
         let val = self.get_holding(r::FILT)?;
         try_from_f32::<_, UART>(val)
     }
@@ -641,112 +647,112 @@ where
     /// NOTE: Stronger filtering increases the stability of
     /// the readout display, but causes more delay in the response to changes in
     /// temperature is a time period setting (unit in seconds) that decides how often
-    pub fn set_filt(&mut self, val: Filter) -> crate::Result<(), UART> {
+    pub fn set_filter(&mut self, val: Filter) -> crate::Result<(), UART> {
         let val = val.into();
         self.set_holding(r::FILT, val)
     }
 
     /// Get input sensor type (INTY).
-    pub fn get_inty(&mut self) -> crate::Result<InputType, UART> {
+    pub fn get_input_sensor_type(&mut self) -> crate::Result<InputType, UART> {
         let val = self.get_holding(r::INTY)?;
         try_from_f32::<_, UART>(val)
     }
 
     /// Set input sensor type (INTY).
-    pub fn set_inty(&mut self, val: InputType) -> crate::Result<(), UART> {
+    pub fn set_input_sensor_type(&mut self, val: InputType) -> crate::Result<(), UART> {
         let val = val.into();
         self.set_holding(r::INTY, val)
     }
 
     /// Get output control mode (OUTY).
-    pub fn get_outy(&mut self) -> crate::Result<OutputMode, UART> {
+    pub fn get_output_mode(&mut self) -> crate::Result<OutputMode, UART> {
         let val = self.get_holding(r::OUTY)?;
         try_from_f32::<_, UART>(val)
     }
 
     /// Set output control mode (OUTY).
-    pub fn set_outy(&mut self, val: OutputMode) -> crate::Result<(), UART> {
+    pub fn set_output_mode(&mut self, val: OutputMode) -> crate::Result<(), UART> {
         let val = val.into();
         self.set_holding(r::OUTY, val)
     }
 
     /// Get main output mode (OUTY).
-    pub fn get_coty(&mut self) -> crate::Result<OutputType, UART> {
+    pub fn get_output_type(&mut self) -> crate::Result<OutputType, UART> {
         let val = self.get_holding(r::COTY)?;
         try_from_f32::<_, UART>(val)
     }
 
     /// Set main output mode (OUTY).
-    pub fn set_coty(&mut self, val: OutputType) -> crate::Result<(), UART> {
+    pub fn set_output_type(&mut self, val: OutputType) -> crate::Result<(), UART> {
         let val = val.into();
         self.set_holding(r::COTY, val)
     }
 
     /// Get hysteresis band (Hy).
-    pub fn get_hy(&mut self) -> crate::Result<f32, UART> {
+    pub fn get_hysteresis(&mut self) -> crate::Result<f32, UART> {
         self.get_holding(r::HY)
     }
 
     /// Set hysteresis band (Hy).
-    pub fn set_hy(&mut self, val: f32) -> Result<(), UART> {
+    pub fn set_hysteresis(&mut self, val: f32) -> Result<(), UART> {
         assert!(val >= 0.0 && val <= 9999.0);
         self.set_holding(r::HY, val)
     }
 
     /// Get input offset (PSb).
-    pub fn get_psb(&mut self) -> crate::Result<f32, UART> {
+    pub fn get_input_offset(&mut self) -> crate::Result<f32, UART> {
         self.get_holding(r::PSB)
     }
 
     /// Set input offset (PSb).
-    pub fn set_psb(&mut self, val: f32) -> Result<(), UART> {
+    pub fn set_intput_offset(&mut self, val: f32) -> Result<(), UART> {
         assert!(val >= -1000.0 && val <= 1000.0);
         self.set_holding(r::HY, val)
     }
 
     /// Get control function (rd).
-    pub fn get_rd(&mut self) -> crate::Result<ControlDirection, UART> {
+    pub fn get_control_direction(&mut self) -> crate::Result<ControlDirection, UART> {
         let val = self.get_holding(r::RD)?;
         try_from_f32::<_, UART>(val)
     }
 
     /// Set control function (rd).
-    pub fn set_rd(&mut self, val: ControlDirection) -> crate::Result<(), UART> {
+    pub fn set_control_direction(&mut self, val: ControlDirection) -> crate::Result<(), UART> {
         let val = val.into();
         self.set_holding(r::RD, val)
     }
 
     /// Get display unit (CorF).
-    pub fn get_corf(&mut self) -> crate::Result<DisplayUnit, UART> {
+    pub fn get_display_unit(&mut self) -> crate::Result<DisplayUnit, UART> {
         let val = self.get_holding(r::CORF)?;
         try_from_f32::<_, UART>(val)
     }
 
     /// Set display unit (CorF).
-    pub fn set_corf(&mut self, val: DisplayUnit) -> crate::Result<(), UART> {
+    pub fn set_display_unit(&mut self, val: DisplayUnit) -> crate::Result<(), UART> {
         let val = val.into();
         self.set_holding(r::CORF, val)
     }
 
     /// Get unit ID (Id).
-    pub fn get_id(&mut self) -> crate::Result<f32, UART> {
+    pub fn get_unit_id(&mut self) -> crate::Result<f32, UART> {
         self.get_holding(r::ID)
     }
 
     /// Set unit ID (Id).
-    pub fn set_id(&mut self, val: f32) -> Result<(), UART> {
+    pub fn set_unit_id(&mut self, val: f32) -> Result<(), UART> {
         assert!(val >= 0.0 && val <= 64.0);
         self.set_holding(r::ID, val)
     }
 
     /// Get baud rate (bAud).
-    pub fn get_baud(&mut self) -> crate::Result<BaudRate, UART> {
+    pub fn get_baud_rate(&mut self) -> crate::Result<BaudRate, UART> {
         let val = self.get_holding(r::BAUD)?;
         try_from_f32::<_, UART>(val)
     }
 
     /// Set baud rate (bAud).
-    pub fn set_baud(&mut self, val: BaudRate) -> crate::Result<(), UART> {
+    pub fn set_baud_rate(&mut self, val: BaudRate) -> crate::Result<(), UART> {
         let val = val.into();
         self.set_holding(r::BAUD, val)
     }
@@ -880,6 +886,7 @@ where
 pub type Result<T, UART> =
     core::result::Result<T, Error<<UART as eh1_0_alpha::serial::ErrorType>::Error>>;
 
+#[inline(always)]
 fn try_from_f32<T, UART>(val: f32) -> crate::Result<T, UART>
 where
     T: TryFrom<f32>,
@@ -903,6 +910,7 @@ fn f32_to_values(d0: u16, d1: u16) -> f32 {
 }
 
 /// Splits an f32 into two consecutive holding register values.
+#[inline(always)]
 fn values_to_f32(val: f32) -> [u16; 2] {
     let bytes = val.to_be_bytes();
     let d0 = (bytes[0] as u16) << 8 | bytes[1] as u16;

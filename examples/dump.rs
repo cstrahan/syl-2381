@@ -31,37 +31,44 @@ where
 {
     use paste::paste;
 
-    macro_rules! print_holdings {
+    macro_rules! print_params {
         ( $( $name:expr ),* ) => {
             paste! {
                 $(
                     let val = pid.[< get_ $name:lower  >]();
                     if let Ok(v) = val {
-                        println!("{: <7} = {}", stringify!($name), v);
+                        println!("{: >19} = {}", stringify!($name), v);
                     }
                 )*
             }
         };
     }
 
-    println!("Dynamic Params");
-    println!("==============");
-    print_holdings!(PV, OUT);
-    let al1_sta = pid.get_al1_sta();
-    if let Ok(al1_sta) = al1_sta {
-        println!("{: <7} = {}", "AL1_STA", al1_sta);
-    }
-    print_holdings!(CV);
-    let at = pid.get_at();
-    if let Ok(at) = at {
-        println!("{: <7} = {:#?}", "AT", at);
-    }
-
-    println!();
-    println!("Static Params");
-    println!("=============");
-    print_holdings!(
-        SV, AH1, AL1, P, I, D, BB, SOUF, OT, FILT, INTY, OUTY, COTY, HY, PSB, RD, CORF, ID, BAUD
+    print_params!(
+        pv,
+        out,
+        j1_status,
+        cv,
+        status,
+        sv,
+        j1_on_temp,
+        j1_off_temp,
+        p,
+        i,
+        d,
+        bb,
+        souf,
+        control_cycle,
+        filter,
+        input_sensor_type,
+        output_mode,
+        output_type,
+        hysteresis,
+        input_offset,
+        control_direction,
+        display_unit,
+        unit_id,
+        baud_rate
     );
 }
 
