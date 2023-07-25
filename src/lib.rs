@@ -8,9 +8,6 @@ Documentation:
 Also useful:
  - https://www.ni.com/en-us/shop/seamlessly-connect-to-third-party-devices-and-supervisory-system/the-modbus-protocol-in-depth.html
 */
-// use serial::unix::TTYPort;
-use serialport::{SerialPort, TTYPort};
-use std::io::{Read, Write};
 
 use std::fmt;
 
@@ -426,7 +423,7 @@ impl fmt::Display for OutputMode {
 
 pub enum Error<UartError> {
     SerialError(UartError),
-    UnexpectedValue(),
+    UnexpectedValue,
     ModbusError(rmodbus::ErrorKind),
 }
 
@@ -754,7 +751,9 @@ where
 
     /// ---------------------------
 
-    /// All holding values on the SYL-2381 are f32,
+    /// Get holding param.
+    ///
+    /// All holding params on the SYL-2381 are f32,
     /// encoded as two consecutive values.
     fn set_holding(&mut self, reg: u16, val: f32) -> Result<(), UART> {
         let values = values_to_f32(val);
@@ -771,18 +770,22 @@ where
 
         // read: addr (byte) + func (byte) + count (byte)
         let _ = response.resize(3, 0);
-        self.read_all(&mut response)?;
+        self.read_exact(&mut response)?;
 
         let len = guess_response_frame_len(&response, ModbusProto::Rtu)?;
 
         let _ = response.resize(len as usize, 0);
-        self.read_all(&mut response[3..])?;
+        self.read_exact(&mut response[3..])?;
 
         mreq.parse_ok(&response)?;
 
         Ok(())
     }
 
+    /// Set holding param.
+    ///
+    /// All holding params on the SYL-2381 are f32,
+    /// encoded as two consecutive values.
     fn get_holding(&mut self, reg: u16) -> Result<f32, UART> {
         let mut mreq = ModbusRequest::new(self.unit_id, ModbusProto::Rtu);
 
@@ -797,12 +800,12 @@ where
 
         // read: addr (byte) + func (byte) + count (byte)
         let _ = response.resize(3, 0);
-        self.read_all(&mut response)?;
+        self.read_exact(&mut response)?;
 
         let len = guess_response_frame_len(&response, ModbusProto::Rtu)?;
 
         let _ = response.resize(len as usize, 0);
-        self.read_all(&mut response[3..])?;
+        self.read_exact(&mut response[3..])?;
 
         let mut data: heapless::Vec<u16, 2> = heapless::Vec::new();
         mreq.parse_u16(&response, &mut data)?;
@@ -832,9 +835,8 @@ where
 
         // read: addr (byte) + func (byte) + count (byte)
         let _ = response.resize(3, 0);
-        self.read_all(&mut response)?;
+        self.read_exact(&mut response)?;
 
-        // TODO: don't hardcode this around RTU
         let byte_count = response[2];
         // As mentioned earlier, only expecting one byte.
         assert_eq!(byte_count, 1);
@@ -842,7 +844,7 @@ where
         let len = guess_response_frame_len(&response, ModbusProto::Rtu)?;
 
         let _ = response.resize(len as usize, 0);
-        self.read_all(&mut response[3..])?;
+        self.read_exact(&mut response[3..])?;
 
         // println!("response buffer: {:02X?}", response);
 
@@ -856,7 +858,7 @@ where
         Ok(val)
     }
 
-    fn read_all(&mut self, buf: &mut [u8]) -> crate::Result<(), UART> {
+    fn read_exact(&mut self, buf: &mut [u8]) -> crate::Result<(), UART> {
         for i in 0..buf.len() {
             let b = nb::block!(self.port.read()).map_err(|err| Error::SerialError(err))?;
             buf[i] = b
@@ -883,7 +885,7 @@ where
 {
     let v = T::try_from(val)
         .map(|v| Ok(v))
-        .unwrap_or(Err(Error::UnexpectedValue()))?;
+        .unwrap_or(Err(Error::UnexpectedValue))?;
 
     Ok(v)
 }
