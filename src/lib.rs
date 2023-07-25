@@ -757,13 +757,15 @@ where
 
         self.write_all(&request);
 
-        let mut buf = [0u8; 3];
+        // reuse request buffer
+        request.clear();
+        let mut response = request;
 
-        self.read_all(&mut buf);
+        // read: addr (byte) + func (byte) + count (byte)
+        response.extend_from_slice(&[0; 3]);
+        self.read_all(&mut response[0..3]);
 
-        let mut response = Vec::new();
-        response.extend_from_slice(&buf);
-        let len = guess_response_frame_len(&buf, ModbusProto::Rtu).expect("guess len");
+        let len = guess_response_frame_len(&response, ModbusProto::Rtu).expect("guess len");
 
         // for RTU: addr (byte) + func (byte) + count (byte) + payload (count bytes) + crc (2 bytes)
         // so we subtract 3 bytes from the full frame len to get the remaining length.
@@ -779,23 +781,21 @@ where
     fn get_holding(&mut self, reg: u16) -> f32 {
         let mut mreq = ModbusRequest::new(self.unit_id, ModbusProto::Rtu);
 
-        // request is 8 bytes, response is 9 bytes.
-        // use 9 byte capacity so we can reuse buffer for response.
-        let mut request: heapless::Vec<u8, 9> = heapless::Vec::new();
+        let mut request: heapless::Vec<u8, 256> = heapless::Vec::new();
         mreq.generate_get_holdings(reg, 2, &mut request)
             .expect("modbus gen");
 
         self.write_all(&request);
 
-        let mut buf = [0u8; 3];
-        self.read_all(&mut buf);
-
         // reuse request buffer
         request.clear();
         let mut response = request;
 
-        response.extend_from_slice(&buf);
-        let len = guess_response_frame_len(&buf, ModbusProto::Rtu).expect("guess len");
+        // read: addr (byte) + func (byte) + count (byte)
+        response.extend_from_slice(&[0; 3]);
+        self.read_all(&mut response[0..3]);
+
+        let len = guess_response_frame_len(&response, ModbusProto::Rtu).expect("guess len");
 
         // for RTU: addr (byte) + func (byte) + count (byte) + payload (count bytes) + crc (2 bytes)
         // so we subtract 3 bytes from the full frame len to get the remaining length.
@@ -822,30 +822,27 @@ where
 
         let mut mreq = ModbusRequest::new(self.unit_id, ModbusProto::Rtu);
 
-        // request is 8 bytes, response is 6 bytes.
-        // use 8 byte capacity so we can reuse buffer for response.
-        let mut request: heapless::Vec<u8, 9> = heapless::Vec::new();
+        let mut request: heapless::Vec<u8, 256> = heapless::Vec::new();
         mreq.generate_get_coils(reg, count as u16, &mut request)
             .expect("modbus gen");
 
         self.write_all(&request);
 
-        let mut buf = [0u8; 3];
-        self.read_all(&mut buf);
-
-        // TODO: don't hardcode this around RTU
-        let byte_count = buf[2];
-        // As mentioned earlier, only expecting one byte.
-        assert_eq!(byte_count, 1);
-
         // reuse request buffer for response
         request.clear();
         let mut response = request;
 
-        response.extend_from_slice(&buf);
-        let len = guess_response_frame_len(&buf, ModbusProto::Rtu).expect("guess len");
+        // read: addr (byte) + func (byte) + count (byte)
+        response.extend_from_slice(&[0; 3]);
+        self.read_all(&mut response[0..3]);
 
-        // for RTU: addr (byte) + func (byte) + count (byte) + payload (count bytes) + crc (2 bytes)
+        // TODO: don't hardcode this around RTU
+        let byte_count = response[2];
+        // As mentioned earlier, only expecting one byte.
+        assert_eq!(byte_count, 1);
+
+        let len = guess_response_frame_len(&response, ModbusProto::Rtu).expect("guess len");
+
         // so we subtract 3 bytes from the full frame len to get the remaining length.
         if len > 3 {
             let mut rest = vec![0u8; (len - 3) as usize];

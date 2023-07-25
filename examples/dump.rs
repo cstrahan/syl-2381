@@ -56,8 +56,10 @@ where
         SV, AH1, AL1, P, I, D, BB, SOUF, OT, FILT, INTY, OUTY, COTY, HY, PSB, RD, CORF, ID, BAUD
     );
 }
-mod embedded_serial {
 
+// An embedded_hal wrapper for serialport.
+// See "Add optional support for embedded-hal traits" https://github.com/serialport/serialport-rs/pull/59
+mod embedded_serial {
     pub struct EmbeddedSerial {
         pub port: Box<dyn SerialPort>,
     }
