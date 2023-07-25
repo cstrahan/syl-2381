@@ -24,15 +24,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4668fb0ea861c1df094127ac5f1da3409a82116a4ba74fca2e58ef927159bb3"
 
 [[package]]
-name = "modbus_test"
-version = "0.1.0"
-dependencies = [
- "paste",
- "rmodbus",
- "serial",
-]
-
-[[package]]
 name = "paste"
 version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -87,6 +78,15 @@ checksum = "15c6d3b776267a75d31bbdfd5d36c0ca051251caafc285827052bc53bcdc8162"
 dependencies = [
  "libc",
  "serial-core",
+]
+
+[[package]]
+name = "syl2381"
+version = "0.1.0"
+dependencies = [
+ "paste",
+ "rmodbus",
+ "serial",
 ]
 
 [[package]]
