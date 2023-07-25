@@ -11,11 +11,16 @@ name = "syl2381"
 path = "src/lib.rs"
 
 [dependencies]
+embedded-hal = { version = "0.2.5", features = ["unproven"] }
+eh1_0_alpha = { package = "embedded-hal", version = "=1.0.0-alpha.11", optional = false }
+eh_nb_1_0_alpha = { package = "embedded-hal-nb", version = "=1.0.0-alpha.3", optional = false }
 rmodbus = "0.7.4"
 serialport = "4.2.1"
+nb = "1"
 
 [dev-dependencies]
-paste = "1.0.14"
-embedded-hal = { version = "=1.0.0-alpha.9", optional = false }
-embedded-hal-nb = { version = "=1.0.0-alpha.1", optional = false }
+embedded-hal = { version = "0.2.5", features = ["unproven"] }
+eh1_0_alpha = { package = "embedded-hal", version = "=1.0.0-alpha.11", optional = false }
+eh_nb_1_0_alpha = { package = "embedded-hal-nb", version = "=1.0.0-alpha.3", optional = false }
 nb = { version = "1", optional = false }
+paste = "1.0.14"

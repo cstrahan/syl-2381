@@ -4,6 +4,8 @@ use std::time::Duration;
 extern crate syl2381;
 use syl2381::Syl2381;
 
+use eh_nb_1_0_alpha as embedded_hal;
+
 fn main() {
     let port_name = "/dev/tty.usbserial-A10MMQO2";
 
@@ -16,12 +18,17 @@ fn main() {
         .open()
         .expect("opening serial port");
 
+    let port = embedded_serial::EmbeddedSerial { port: port };
+
     let mut pid = Syl2381::new(5, port);
 
     dump_params(&mut pid);
 }
 
-pub fn dump_params(pid: &mut Syl2381) {
+pub fn dump_params<S>(pid: &mut Syl2381<S>)
+where
+    S: embedded_hal::serial::Read<u8> + embedded_hal::serial::Write<u8>,
+{
     use paste::paste;
 
     macro_rules! print_holdings {
@@ -49,92 +56,91 @@ pub fn dump_params(pid: &mut Syl2381) {
         SV, AH1, AL1, P, I, D, BB, SOUF, OT, FILT, INTY, OUTY, COTY, HY, PSB, RD, CORF, ID, BAUD
     );
 }
+mod embedded_serial {
 
-// mod embedded_serial {
+    pub struct EmbeddedSerial {
+        pub port: Box<dyn SerialPort>,
+    }
 
-//     use std::io;
+    use std::io;
 
-//     use embedded_hal::serial::{ErrorKind, ErrorType};
+    use eh1_0_alpha::serial::{ErrorKind, ErrorType};
 
-//     use crate::SerialPort;
+    use serialport::SerialPort;
 
-//     #[derive(Debug, Copy, Clone)]
-//     pub struct SerialError {
-//         kind: io::ErrorKind,
-//     }
+    #[derive(Debug, Copy, Clone)]
+    pub struct SerialError {
+        kind: io::ErrorKind,
+    }
 
-//     impl embedded_hal::serial::Error for SerialError {
-//         fn kind(&self) -> ErrorKind {
-//             #[allow(clippy::match_single_binding)]
-//             match self.kind {
-//                 _ => ErrorKind::Other,
-//             }
-//         }
-//     }
+    impl eh1_0_alpha::serial::Error for SerialError {
+        fn kind(&self) -> ErrorKind {
+            #[allow(clippy::match_single_binding)]
+            match self.kind {
+                _ => ErrorKind::Other,
+            }
+        }
+    }
 
-//     impl From<io::Error> for SerialError {
-//         fn from(e: io::Error) -> Self {
-//             SerialError { kind: e.kind() }
-//         }
-//     }
+    impl From<io::Error> for SerialError {
+        fn from(e: io::Error) -> Self {
+            SerialError { kind: e.kind() }
+        }
+    }
 
-//     impl ErrorType for Box<dyn SerialPort> {
-//         type Error = SerialError;
-//     }
+    impl ErrorType for EmbeddedSerial {
+        type Error = SerialError;
+    }
 
-//     mod nonblocking {
-//         use super::*;
-//         use embedded_hal_nb::serial;
-//         use serial::unix::TTYPort;
+    mod nonblocking {
+        use super::*;
+        use eh_nb_1_0_alpha::serial;
 
-//         pub struct EmbeddedSerial {
-//             pub serial: TTYPort,
-//         }
+        fn io_error_to_nb(err: io::Error) -> nb::Error<SerialError> {
+            match err.kind() {
+                io::ErrorKind::WouldBlock | io::ErrorKind::Interrupted => nb::Error::WouldBlock,
+                other => nb::Error::Other(SerialError { kind: other }),
+            }
+        }
 
-//         fn io_error_to_nb(err: io::Error) -> nb::Error<SerialError> {
-//             match err.kind() {
-//                 io::ErrorKind::WouldBlock | io::ErrorKind::Interrupted => nb::Error::WouldBlock,
-//                 other => nb::Error::Other(SerialError { kind: other }),
-//             }
-//         }
+        impl serial::Read<u8> for EmbeddedSerial {
+            fn read(&mut self) -> nb::Result<u8, Self::Error> {
+                let mut buffer = [0; 1];
+                let bytes_read =
+                    io::Read::read(&mut self.port, &mut buffer).map_err(io_error_to_nb)?;
+                if bytes_read > 0 {
+                    Ok(buffer[0])
+                } else {
+                    Err(nb::Error::WouldBlock)
+                }
+            }
+        }
 
-//         impl serial::Read<u8> for Box<dyn SerialPort> {
-//             fn read(&mut self) -> nb::Result<u8, Self::Error> {
-//                 let mut buffer = [0; 1];
-//                 let bytes_read = io::Read::read(self, &mut buffer).map_err(io_error_to_nb)?;
-//                 if bytes_read > 0 {
-//                     Ok(buffer[0])
-//                 } else {
-//                     Err(nb::Error::WouldBlock)
-//                 }
-//             }
-//         }
+        impl serial::Write<u8> for EmbeddedSerial {
+            fn write(&mut self, word: u8) -> nb::Result<(), Self::Error> {
+                io::Write::write(&mut self.port, &[word])
+                    .map_err(io_error_to_nb)
+                    .map(|_| ())
+            }
 
-//         impl serial::Write<u8> for Box<dyn SerialPort> {
-//             fn write(&mut self, word: u8) -> nb::Result<(), Self::Error> {
-//                 io::Write::write(self, &[word])
-//                     .map_err(io_error_to_nb)
-//                     .map(|_| ())
-//             }
+            fn flush(&mut self) -> nb::Result<(), Self::Error> {
+                io::Write::flush(&mut self.port).map_err(io_error_to_nb)
+            }
+        }
+    }
 
-//             fn flush(&mut self) -> nb::Result<(), Self::Error> {
-//                 io::Write::flush(self).map_err(io_error_to_nb)
-//             }
-//         }
-//     }
+    mod blocking {
+        use super::*;
+        use eh1_0_alpha::serial;
 
-//     mod blocking {
-//         use super::*;
-//         use embedded_hal::serial;
+        impl serial::Write<u8> for EmbeddedSerial {
+            fn write(&mut self, buffer: &[u8]) -> Result<(), Self::Error> {
+                Ok(io::Write::write_all(&mut self.port, buffer)?)
+            }
 
-//         impl serial::Write<u8> for Box<dyn SerialPort> {
-//             fn write(&mut self, buffer: &[u8]) -> Result<(), Self::Error> {
-//                 Ok(io::Write::write_all(self, buffer)?)
-//             }
-
-//             fn flush(&mut self) -> Result<(), Self::Error> {
-//                 Ok(io::Write::flush(self)?)
-//             }
-//         }
-//     }
-// }
+            fn flush(&mut self) -> Result<(), Self::Error> {
+                Ok(io::Write::flush(&mut self.port)?)
+            }
+        }
+    }
+}

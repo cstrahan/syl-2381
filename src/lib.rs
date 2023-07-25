@@ -14,6 +14,8 @@ use std::fmt;
 
 use rmodbus::{client::ModbusRequest, guess_response_frame_len, ModbusProto};
 
+use eh_nb_1_0_alpha as embedded_hal;
+
 mod r {
     pub const PV: u16 = 0x0164;
     pub const OUT: u16 = 0x0166;
@@ -428,13 +430,16 @@ impl fmt::Display for OutputMode {
     }
 }
 
-pub struct Syl2381 {
+pub struct Syl2381<S> {
     unit_id: u8,
-    port: Box<dyn SerialPort>,
+    port: S,
 }
 
-impl Syl2381 {
-    pub fn new(unit_id: u8, port: Box<dyn SerialPort>) -> Self {
+impl<S> Syl2381<S>
+where
+    S: embedded_hal::serial::Read<u8> + embedded_hal::serial::Write<u8>,
+{
+    pub fn new(unit_id: u8, port: S) -> Self {
         Syl2381 {
             unit_id: unit_id,
             port: port,
@@ -750,10 +755,13 @@ impl Syl2381 {
         mreq.generate_set_holdings_bulk(reg, &values, &mut request)
             .expect("modbus gen");
 
-        self.port.write_all(&request).expect("port write");
+        self.write_all(&request);
+        // self.port.write_all(&request).expect("port write");
 
         let mut buf = [0u8; 3];
-        self.port.read_exact(&mut buf).expect("read header");
+
+        self.read_all(&mut buf);
+        // self.port.read_exact(&mut buf).expect("read header");
 
         let mut response = Vec::new();
         response.extend_from_slice(&buf);
@@ -763,7 +771,8 @@ impl Syl2381 {
         // so we subtract 3 bytes from the full frame len to get the remaining length.
         if len > 3 {
             let mut rest = vec![0u8; (len - 3) as usize];
-            self.port.read_exact(&mut rest).unwrap();
+            self.read_all(&mut rest);
+            // self.port.read_exact(&mut rest).unwrap();
             response.extend(rest);
         }
 
@@ -777,10 +786,12 @@ impl Syl2381 {
         mreq.generate_get_holdings(reg, 2, &mut request)
             .expect("modbus gen");
 
-        self.port.write_all(&request).expect("port write");
+        // self.port.write_all(&request).expect("port write");
+        self.write_all(&request);
 
         let mut buf = [0u8; 3];
-        self.port.read_exact(&mut buf).expect("read header");
+        self.read_all(&mut buf);
+        // self.port.read_exact(&mut buf).expect("read header");
 
         let mut response = Vec::new();
         response.extend_from_slice(&buf);
@@ -790,7 +801,8 @@ impl Syl2381 {
         // so we subtract 3 bytes from the full frame len to get the remaining length.
         if len > 3 {
             let mut rest = vec![0u8; (len - 3) as usize];
-            self.port.read_exact(&mut rest).unwrap();
+            self.read_all(&mut rest);
+            // self.port.read_exact(&mut rest).unwrap();
             response.extend(rest);
         }
 
@@ -815,10 +827,12 @@ impl Syl2381 {
         mreq.generate_get_coils(reg, count as u16, &mut request)
             .expect("modbus gen");
 
-        self.port.write_all(&request).expect("port write");
+        self.write_all(&request);
+        // self.port.write_all(&request).expect("port write");
 
         let mut buf = [0u8; 3];
-        self.port.read_exact(&mut buf).expect("read header");
+        self.read_all(&mut buf);
+        // self.port.read_exact(&mut buf).expect("read header");
 
         // TODO: don't hardcode this around RTU
         let byte_count = buf[2];
@@ -833,7 +847,8 @@ impl Syl2381 {
         // so we subtract 3 bytes from the full frame len to get the remaining length.
         if len > 3 {
             let mut rest = vec![0u8; (len - 3) as usize];
-            self.port.read_exact(&mut rest).unwrap();
+            self.read_all(&mut rest);
+            // self.port.read_exact(&mut rest).unwrap();
             response.extend(rest);
         }
 
@@ -846,6 +861,28 @@ impl Syl2381 {
         // TODO: make this work also work for non-RTU
         let val = response[3];
         val
+    }
+
+    fn read_all(
+        &mut self,
+        buf: &mut [u8],
+    ) -> Result<(), <S as embedded_hal::serial::ErrorType>::Error> {
+        for i in 0..buf.len() {
+            let b = nb::block!(self.port.read())?;
+            buf[i] = b
+        }
+        Ok(())
+    }
+
+    fn write_all(
+        &mut self,
+        buf: &[u8],
+    ) -> Result<(), <S as embedded_hal::serial::ErrorType>::Error> {
+        for &b in buf {
+            nb::block!(self.port.write(b))?;
+        }
+
+        Ok(())
     }
 }
 
