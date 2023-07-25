@@ -36,7 +36,9 @@ where
             paste! {
                 $(
                     let val = pid.[< get_ $name:lower  >]();
-                    println!("{: <7} = {}", stringify!($name), val);
+                    if let Ok(v) = val {
+                        println!("{: <7} = {}", stringify!($name), v);
+                    }
                 )*
             }
         };
@@ -45,9 +47,15 @@ where
     println!("Dynamic Params");
     println!("==============");
     print_holdings!(PV, OUT);
-    println!("{: <7} = {}", "AL1_STA", pid.get_al1_sta());
+    let al1_sta = pid.get_al1_sta();
+    if let Ok(al1_sta) = al1_sta {
+        println!("{: <7} = {}", "AL1_STA", al1_sta);
+    }
     print_holdings!(CV);
-    println!("{: <7} = {:#?}", "AT", pid.get_at());
+    let at = pid.get_at();
+    if let Ok(at) = at {
+        println!("{: <7} = {:#?}", "AT", at);
+    }
 
     println!();
     println!("Static Params");
