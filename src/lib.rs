@@ -472,7 +472,9 @@ where
     ///
     /// To set the output value, the control flag (CV) must be set.
     pub fn set_out(&mut self, val: f32) -> Result<(), UART> {
-        assert!(val >= 0.0 && val <= 1.0);
+        if !(val >= 0.0 && val <= 1.0) {
+            return Err(Error::UnexpectedValue(val));
+        }
         self.set_holding(regs::OUT, val)
     }
 
@@ -526,7 +528,9 @@ where
 
     /// Set the set value (SV).
     pub fn set_sv(&mut self, val: i16) -> Result<(), UART> {
-        assert!(val > -1999 && val < 9999);
+        if !(val >= -1999 && val <= 9999) {
+            return Err(Error::UnexpectedValue(val as f32));
+        }
         let val = val as f32;
         self.set_holding(regs::SV, val)
     }
@@ -539,7 +543,9 @@ where
 
     /// Set J1 ON temperature (AH1).
     pub fn set_j1_on_temp(&mut self, val: i16) -> Result<(), UART> {
-        assert!(val > -1999 && val < 9999);
+        if !(val >= -1999 && val <= 9999) {
+            return Err(Error::UnexpectedValue(val as f32));
+        }
         let val = val as f32;
         self.set_holding(regs::AH1, val)
     }
@@ -552,7 +558,9 @@ where
 
     /// Set J1 OFF temperature (AL1).
     pub fn set_j1_off_temp(&mut self, val: i16) -> Result<(), UART> {
-        assert!(val >= -1999 && val <= 9999);
+        if !(val >= -1999 && val <= 9999) {
+            return Err(Error::UnexpectedValue(val as f32));
+        }
         let val = val as f32;
         self.set_holding(regs::AL1, val)
     }
@@ -564,7 +572,9 @@ where
 
     /// Get proportional constant (P).
     pub fn set_p(&mut self, val: f32) -> Result<(), UART> {
-        assert!(val >= 0.1 && val <= 9999.9);
+        if !(val >= -0.1 && val <= 9999.9) {
+            return Err(Error::UnexpectedValue(val));
+        }
         self.set_holding(regs::P, val)
     }
 
@@ -576,7 +586,9 @@ where
 
     /// Set integral time (I).
     pub fn set_i(&mut self, val: u16) -> Result<(), UART> {
-        assert!(val >= 2 && val <= 1999);
+        if !(val >= 2 && val <= 1999) {
+            return Err(Error::UnexpectedValue(val as f32));
+        }
         let val = val as f32;
         self.set_holding(regs::I, val)
     }
@@ -589,7 +601,9 @@ where
 
     /// Set derivative time (D).
     pub fn set_d(&mut self, val: u16) -> Result<(), UART> {
-        assert!(val <= 999);
+        if !(val <= 999) {
+            return Err(Error::UnexpectedValue(val as f32));
+        }
         let val = val as f32;
         self.set_holding(regs::D, val)
     }
@@ -602,7 +616,9 @@ where
 
     /// Set proportional band range limit (BB).
     pub fn set_bb(&mut self, val: u16) -> Result<(), UART> {
-        assert!(val >= 1 && val <= 1999);
+        if !(val >= 1 && val <= 1999) {
+            return Err(Error::UnexpectedValue(val as f32));
+        }
         let val = val as f32;
         self.set_holding(regs::BB, val)
     }
@@ -624,7 +640,9 @@ where
     /// temperature overshot. When SouF is set to a small value, the system may
     /// overshoot; when SouF is set to a high value, the system will be over-damped.
     pub fn set_souf(&mut self, val: f32) -> Result<(), UART> {
-        assert!(val >= 0.0 && val <= 1.0);
+        if !(val >= 0.0 && val <= 1.0) {
+            return Err(Error::UnexpectedValue(val as f32));
+        }
         self.set_holding(regs::SOUF, val)
     }
 
@@ -642,7 +660,9 @@ where
     /// This is a time period setting (unit in seconds) that decides how often
     /// does the controller calculate and change its output.
     pub fn set_control_cycle(&mut self, val: u16) -> Result<(), UART> {
-        assert!(val >= 1 && val <= 500);
+        if !(val >= 1 && val <= 500) {
+            return Err(Error::UnexpectedValue(val as f32));
+        }
         let val = val as f32;
         self.set_holding(regs::OT, val)
     }
@@ -711,7 +731,9 @@ where
 
     /// Set hysteresis band (Hy).
     pub fn set_hysteresis(&mut self, val: u16) -> Result<(), UART> {
-        assert!(val <= 9999);
+        if !(val <= 9999) {
+            return Err(Error::UnexpectedValue(val as f32));
+        }
         let val = val as f32;
         self.set_holding(regs::HY, val)
     }
@@ -724,7 +746,9 @@ where
 
     /// Set input offset (PSb).
     pub fn set_intput_offset(&mut self, val: i16) -> Result<(), UART> {
-        assert!(val >= -1000 && val <= 1000);
+        if !(val >= -1000 && val <= 1000) {
+            return Err(Error::UnexpectedValue(val as f32));
+        }
         let val = val as f32;
         self.set_holding(regs::PSB, val)
     }
@@ -763,7 +787,9 @@ where
     ///
     /// NOTE: This reconfigures the temperature controller to use a different unit ID on the Modbus.
     pub fn set_unit_id(&mut self, val: u8) -> Result<(), UART> {
-        assert!(val >= 0 && val <= 64);
+        if !(val <= 64) {
+            return Err(Error::UnexpectedValue(val as f32));
+        }
         let val = val as f32;
         self.set_holding(regs::ID, val)
     }
@@ -868,19 +894,23 @@ where
         let _ = response.resize(3, 0);
         self.read_exact(&mut response)?;
 
-        let byte_count = response[2];
-        // As mentioned earlier, only expecting one byte.
-        assert_eq!(byte_count, 1);
-
         let len = guess_response_frame_len(&response, ModbusProto::Rtu)?;
 
         let _ = response.resize(len as usize, 0);
         self.read_exact(&mut response[3..])?;
-
         // println!("response buffer: {:02X?}", response);
 
         // ensure the response frame was well formed
         mreq.parse_ok(&response)?;
+
+        // As mentioned earlier, only expecting one byte.
+        // TODO: new error variant?
+        let byte_count = response[2];
+        if byte_count != 1 {
+            // this should never happen
+            return Ok(0);
+        }
+
         // instead of using mreq.parse_bool, which fills a vec of bools,
         // we'll just grab the byte directly.
         // TODO: make this work also work for non-RTU
