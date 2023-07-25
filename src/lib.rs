@@ -751,17 +751,15 @@ where
         let values = values_to_f32(val);
         let mut mreq = ModbusRequest::new(self.unit_id, ModbusProto::Rtu);
 
-        let mut request = Vec::new();
+        let mut request: heapless::Vec<u8, 256> = heapless::Vec::new();
         mreq.generate_set_holdings_bulk(reg, &values, &mut request)
             .expect("modbus gen");
 
         self.write_all(&request);
-        // self.port.write_all(&request).expect("port write");
 
         let mut buf = [0u8; 3];
 
         self.read_all(&mut buf);
-        // self.port.read_exact(&mut buf).expect("read header");
 
         let mut response = Vec::new();
         response.extend_from_slice(&buf);
@@ -772,7 +770,6 @@ where
         if len > 3 {
             let mut rest = vec![0u8; (len - 3) as usize];
             self.read_all(&mut rest);
-            // self.port.read_exact(&mut rest).unwrap();
             response.extend(rest);
         }
 
@@ -782,18 +779,19 @@ where
     fn get_holding(&mut self, reg: u16) -> f32 {
         let mut mreq = ModbusRequest::new(self.unit_id, ModbusProto::Rtu);
 
-        let mut request = Vec::new();
+        let mut request: heapless::Vec<u8, 256> = heapless::Vec::new();
         mreq.generate_get_holdings(reg, 2, &mut request)
             .expect("modbus gen");
 
-        // self.port.write_all(&request).expect("port write");
         self.write_all(&request);
 
         let mut buf = [0u8; 3];
         self.read_all(&mut buf);
-        // self.port.read_exact(&mut buf).expect("read header");
 
-        let mut response = Vec::new();
+        // reuse request buffer
+        request.clear();
+        let mut response = request;
+
         response.extend_from_slice(&buf);
         let len = guess_response_frame_len(&buf, ModbusProto::Rtu).expect("guess len");
 
@@ -802,11 +800,10 @@ where
         if len > 3 {
             let mut rest = vec![0u8; (len - 3) as usize];
             self.read_all(&mut rest);
-            // self.port.read_exact(&mut rest).unwrap();
             response.extend(rest);
         }
 
-        let mut data = Vec::new();
+        let mut data: heapless::Vec<u16, 2> = heapless::Vec::new();
         mreq.parse_u16(&response, &mut data).unwrap();
 
         let val = f32_to_values(data[0], data[1]);
@@ -823,16 +820,14 @@ where
 
         let mut mreq = ModbusRequest::new(self.unit_id, ModbusProto::Rtu);
 
-        let mut request = Vec::new();
+        let mut request: heapless::Vec<u8, 256> = heapless::Vec::new();
         mreq.generate_get_coils(reg, count as u16, &mut request)
             .expect("modbus gen");
 
         self.write_all(&request);
-        // self.port.write_all(&request).expect("port write");
 
         let mut buf = [0u8; 3];
         self.read_all(&mut buf);
-        // self.port.read_exact(&mut buf).expect("read header");
 
         // TODO: don't hardcode this around RTU
         let byte_count = buf[2];
@@ -848,7 +843,6 @@ where
         if len > 3 {
             let mut rest = vec![0u8; (len - 3) as usize];
             self.read_all(&mut rest);
-            // self.port.read_exact(&mut rest).unwrap();
             response.extend(rest);
         }
 

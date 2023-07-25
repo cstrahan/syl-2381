@@ -14,9 +14,12 @@ path = "src/lib.rs"
 embedded-hal = { version = "0.2.5", features = ["unproven"] }
 eh1_0_alpha = { package = "embedded-hal", version = "=1.0.0-alpha.11", optional = false }
 eh_nb_1_0_alpha = { package = "embedded-hal-nb", version = "=1.0.0-alpha.3", optional = false }
-rmodbus = "0.7.4"
+rmodbus = { version = "0.7.4", default-features = false, features = [
+    "heapless",
+] }
 serialport = "4.2.1"
 nb = "1"
+heapless = "0.7.16"
 
 [dev-dependencies]
 embedded-hal = { version = "0.2.5", features = ["unproven"] }
