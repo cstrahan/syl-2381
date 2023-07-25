@@ -805,7 +805,7 @@ where
         self.read_all(&mut response[3..])?;
 
         let mut data: heapless::Vec<u16, 2> = heapless::Vec::new();
-        mreq.parse_u16(&response, &mut data).unwrap();
+        mreq.parse_u16(&response, &mut data)?;
 
         let val = f32_to_values(data[0], data[1]);
 
@@ -822,8 +822,7 @@ where
         let mut mreq = ModbusRequest::new(self.unit_id, ModbusProto::Rtu);
 
         let mut request: heapless::Vec<u8, 256> = heapless::Vec::new();
-        mreq.generate_get_coils(reg, count as u16, &mut request)
-            .expect("modbus gen");
+        mreq.generate_get_coils(reg, count as u16, &mut request)?;
 
         self.write_all(&request)?;
 
@@ -840,7 +839,7 @@ where
         // As mentioned earlier, only expecting one byte.
         assert_eq!(byte_count, 1);
 
-        let len = guess_response_frame_len(&response, ModbusProto::Rtu).expect("guess len");
+        let len = guess_response_frame_len(&response, ModbusProto::Rtu)?;
 
         let _ = response.resize(len as usize, 0);
         self.read_all(&mut response[3..])?;
