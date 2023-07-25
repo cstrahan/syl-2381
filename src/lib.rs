@@ -6,7 +6,8 @@ Documentation:
 Also useful:
  - https://www.ni.com/en-us/shop/seamlessly-connect-to-third-party-devices-and-supervisory-system/the-modbus-protocol-in-depth.html
 */
-use serial::unix::TTYPort;
+// use serial::unix::TTYPort;
+use serialport::{SerialPort, TTYPort};
 use std::io::{Read, Write};
 
 use std::fmt;
@@ -429,11 +430,11 @@ impl fmt::Display for OutputMode {
 
 pub struct Syl2381 {
     unit_id: u8,
-    port: TTYPort,
+    port: Box<dyn SerialPort>,
 }
 
 impl Syl2381 {
-    pub fn new(unit_id: u8, port: TTYPort) -> Self {
+    pub fn new(unit_id: u8, port: Box<dyn SerialPort>) -> Self {
         Syl2381 {
             unit_id: unit_id,
             port: port,
