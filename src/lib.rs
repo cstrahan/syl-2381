@@ -9,7 +9,9 @@ Also useful:
  - https://www.ni.com/en-us/shop/seamlessly-connect-to-third-party-devices-and-supervisory-system/the-modbus-protocol-in-depth.html
 */
 
-use std::fmt;
+#![cfg_attr(all(not(test), not(feature = "std")), no_std)]
+
+use core::fmt;
 
 use rmodbus::{client::ModbusRequest, guess_response_frame_len, ModbusProto};
 

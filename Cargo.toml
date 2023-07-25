@@ -2,13 +2,16 @@
 name = "syl2381"
 version = "0.1.0"
 edition = "2021"
+license = "MIT OR Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-
 [lib]
 name = "syl2381"
 path = "src/lib.rs"
+
+[features]
+default = ["std"]
+std = []
 
 [dependencies]
 embedded-hal = { version = "0.2.5", features = ["unproven"] }
@@ -27,3 +30,8 @@ eh1_0_alpha = { package = "embedded-hal", version = "=1.0.0-alpha.11", optional 
 eh_nb_1_0_alpha = { package = "embedded-hal-nb", version = "=1.0.0-alpha.3", optional = false }
 nb = { version = "1", optional = false }
 paste = "1.0.14"
+
+[[example]]
+name = "dump"
+path = "examples/dump.rs"
+required-features = ["std"]
