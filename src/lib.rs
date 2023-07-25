@@ -13,55 +13,6 @@ use std::fmt;
 
 use rmodbus::{client::ModbusRequest, guess_response_frame_len, ModbusProto};
 
-/// Read an f32 from two consecutive holding register values.
-#[inline(always)]
-fn f32_to_values(d0: u16, d1: u16) -> f32 {
-    let w0 = d0.to_be_bytes();
-    let w1 = d1.to_be_bytes();
-    let fbits = (w0[0] as u32) << 24 | (w0[1] as u32) << 16 | (w1[0] as u32) << 8 | (w1[1] as u32);
-    let val = f32::from_bits(fbits);
-    val
-}
-
-/// Splits an f32 into two consecutive holding register values.
-fn values_to_f32(val: f32) -> [u16; 2] {
-    let bytes = val.to_be_bytes();
-    let d0 = (bytes[0] as u16) << 8 | bytes[1] as u16;
-    let d1 = (bytes[2] as u16) << 8 | bytes[3] as u16;
-
-    [d0, d1]
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::f32_to_values;
-    use crate::values_to_f32;
-
-    #[test]
-    fn f32_representation_roundtrips() {
-        let f = 10000.0;
-        let [d0, d1] = values_to_f32(f);
-        let f2 = f32_to_values(d0, d1);
-        assert_eq!(f2, f);
-    }
-
-    #[test]
-    fn f32_read() {
-        // 10,000 encoded as two holding register values:
-        let d0 = 0x461C;
-        let d1 = 0x4000;
-        let val = f32_to_values(d0, d1);
-        assert_eq!(val, 10_000.0);
-    }
-
-    #[test]
-    fn f32_write() {
-        let val = 10_000.0;
-        let vals = values_to_f32(val);
-        assert_eq!(vals, [0x461C, 0x4000]);
-    }
-}
-
 mod r {
     pub const PV: u16 = 0x0164;
     pub const OUT: u16 = 0x0166;
@@ -788,6 +739,8 @@ impl Syl2381 {
 
     /// ---------------------------
 
+    /// All holding values on the SYL-2381 are f32,
+    /// encoded as two consecutive values.
     fn set_holding(&mut self, reg: u16, val: f32) {
         let values = values_to_f32(val);
         let mut mreq = ModbusRequest::new(self.unit_id, ModbusProto::Rtu);
@@ -848,7 +801,13 @@ impl Syl2381 {
         val
     }
 
+    /// Get `count` coils.
+    ///
+    /// We only ever need to read up to 8 consecutive coils from the SYL-2381 (when reading the AT status register),
+    /// so this makes the simplifying assumption that we will only ever get 1 byte back.
     fn get_coils(&mut self, reg: u16, count: u8) -> u8 {
+        assert!(count <= 8);
+
         let mut mreq = ModbusRequest::new(self.unit_id, ModbusProto::Rtu);
 
         let mut request = Vec::new();
@@ -862,8 +821,7 @@ impl Syl2381 {
 
         // TODO: don't hardcode this around RTU
         let byte_count = buf[2];
-        // The SYL-2381 has, at most, 8 consecutive coils to read from.
-        // So regardless of how many coils we're reading, we should only ever get one byte back.
+        // As mentioned earlier, only expecting one byte.
         assert_eq!(byte_count, 1);
 
         let mut response = Vec::new();
@@ -887,5 +845,54 @@ impl Syl2381 {
         // TODO: make this work also work for non-RTU
         let val = response[3];
         val
+    }
+}
+
+/// Read an f32 from two consecutive holding register values.
+#[inline(always)]
+fn f32_to_values(d0: u16, d1: u16) -> f32 {
+    let w0 = d0.to_be_bytes();
+    let w1 = d1.to_be_bytes();
+    let fbits = (w0[0] as u32) << 24 | (w0[1] as u32) << 16 | (w1[0] as u32) << 8 | (w1[1] as u32);
+    let val = f32::from_bits(fbits);
+    val
+}
+
+/// Splits an f32 into two consecutive holding register values.
+fn values_to_f32(val: f32) -> [u16; 2] {
+    let bytes = val.to_be_bytes();
+    let d0 = (bytes[0] as u16) << 8 | bytes[1] as u16;
+    let d1 = (bytes[2] as u16) << 8 | bytes[3] as u16;
+
+    [d0, d1]
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::f32_to_values;
+    use crate::values_to_f32;
+
+    #[test]
+    fn f32_representation_roundtrips() {
+        let f = 10000.0;
+        let [d0, d1] = values_to_f32(f);
+        let f2 = f32_to_values(d0, d1);
+        assert_eq!(f2, f);
+    }
+
+    #[test]
+    fn f32_read() {
+        // 10,000 encoded as two holding register values:
+        let d0 = 0x461C;
+        let d1 = 0x4000;
+        let val = f32_to_values(d0, d1);
+        assert_eq!(val, 10_000.0);
+    }
+
+    #[test]
+    fn f32_write() {
+        let val = 10_000.0;
+        let vals = values_to_f32(val);
+        assert_eq!(vals, [0x461C, 0x4000]);
     }
 }
