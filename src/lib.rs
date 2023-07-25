@@ -1,4 +1,4 @@
-//! # `syl-2381` API Documentation
+//! # `syl2381` API Documentation
 
 /*
 Documentation:
@@ -458,8 +458,9 @@ where
     }
 
     /// Get the process value (PV).
-    pub fn get_pv(&mut self) -> crate::Result<f32, UART> {
-        self.get_holding(regs::PV)
+    pub fn get_pv(&mut self) -> crate::Result<u16, UART> {
+        let val = self.get_holding(regs::PV)?;
+        Ok(val as u16)
     }
 
     /// Get the power output percentage (OUT).
@@ -518,35 +519,41 @@ where
     }
 
     /// Get the set value (SV).
-    pub fn get_sv(&mut self) -> crate::Result<f32, UART> {
-        self.get_holding(regs::SV)
+    pub fn get_sv(&mut self) -> crate::Result<i16, UART> {
+        let val = self.get_holding(regs::SV)?;
+        Ok(val as i16)
     }
 
     /// Set the set value (SV).
-    pub fn set_sv(&mut self, val: f32) -> Result<(), UART> {
-        assert!(val > -1999.0 && val < 9999.0);
+    pub fn set_sv(&mut self, val: i16) -> Result<(), UART> {
+        assert!(val > -1999 && val < 9999);
+        let val = val as f32;
         self.set_holding(regs::SV, val)
     }
 
     /// Get J1 ON temperature (AH1).
-    pub fn get_j1_on_temp(&mut self) -> crate::Result<f32, UART> {
-        self.get_holding(regs::AH1)
+    pub fn get_j1_on_temp(&mut self) -> crate::Result<i16, UART> {
+        let val = self.get_holding(regs::AH1)?;
+        Ok(val as i16)
     }
 
     /// Set J1 ON temperature (AH1).
-    pub fn set_j1_on_temp(&mut self, val: f32) -> Result<(), UART> {
-        assert!(val > -1999.0 && val < 9999.0);
+    pub fn set_j1_on_temp(&mut self, val: i16) -> Result<(), UART> {
+        assert!(val > -1999 && val < 9999);
+        let val = val as f32;
         self.set_holding(regs::AH1, val)
     }
 
     /// Get J1 OFF temperature (AL1).
-    pub fn get_j1_off_temp(&mut self) -> crate::Result<f32, UART> {
-        self.get_holding(regs::AL1)
+    pub fn get_j1_off_temp(&mut self) -> crate::Result<i16, UART> {
+        let val = self.get_holding(regs::AL1)?;
+        Ok(val as i16)
     }
 
     /// Set J1 OFF temperature (AL1).
-    pub fn set_j1_off_temp(&mut self, val: f32) -> Result<(), UART> {
-        assert!(val >= -1999.0 && val <= 9999.0);
+    pub fn set_j1_off_temp(&mut self, val: i16) -> Result<(), UART> {
+        assert!(val >= -1999 && val <= 9999);
+        let val = val as f32;
         self.set_holding(regs::AL1, val)
     }
 
@@ -562,35 +569,41 @@ where
     }
 
     /// Get integral time (I).
-    pub fn get_i(&mut self) -> crate::Result<f32, UART> {
-        self.get_holding(regs::I)
+    pub fn get_i(&mut self) -> crate::Result<u16, UART> {
+        let val = self.get_holding(regs::I)?;
+        Ok(val as u16)
     }
 
     /// Set integral time (I).
-    pub fn set_i(&mut self, val: f32) -> Result<(), UART> {
-        assert!(val >= -0.0 && val <= 9999.0);
+    pub fn set_i(&mut self, val: u16) -> Result<(), UART> {
+        assert!(val >= 2 && val <= 1999);
+        let val = val as f32;
         self.set_holding(regs::I, val)
     }
 
     /// Set derivative time (D).
-    pub fn get_d(&mut self) -> crate::Result<f32, UART> {
-        self.get_holding(regs::D)
+    pub fn get_d(&mut self) -> crate::Result<u16, UART> {
+        let val = self.get_holding(regs::D)?;
+        Ok(val as u16)
     }
 
     /// Set derivative time (D).
-    pub fn set_d(&mut self, val: f32) -> Result<(), UART> {
-        assert!(val >= 0.0 && val <= 999.0);
+    pub fn set_d(&mut self, val: u16) -> Result<(), UART> {
+        assert!(val <= 999);
+        let val = val as f32;
         self.set_holding(regs::D, val)
     }
 
     /// Get proportional band range limit (BB).
-    pub fn get_bb(&mut self) -> crate::Result<f32, UART> {
-        self.get_holding(regs::BB)
+    pub fn get_bb(&mut self) -> crate::Result<u16, UART> {
+        let val = self.get_holding(regs::BB)?;
+        Ok(val as u16)
     }
 
     /// Set proportional band range limit (BB).
-    pub fn set_bb(&mut self, val: f32) -> Result<(), UART> {
-        assert!(val >= 1.0 && val <= 1999.0);
+    pub fn set_bb(&mut self, val: u16) -> Result<(), UART> {
+        assert!(val >= 1 && val <= 1999);
+        let val = val as f32;
         self.set_holding(regs::BB, val)
     }
 
@@ -619,17 +632,19 @@ where
     ///
     /// This is a time period setting (unit in seconds) that decides how often
     /// does the controller calculate and change its output.
-    pub fn get_control_cycle(&mut self) -> crate::Result<f32, UART> {
-        self.get_holding(regs::OT)
+    pub fn get_control_cycle(&mut self) -> crate::Result<u16, UART> {
+        let val = self.get_holding(regs::OT)?;
+        Ok(val as u16)
     }
 
     /// Set control cycle (OT).
     ///
     /// This is a time period setting (unit in seconds) that decides how often
     /// does the controller calculate and change its output.
-    pub fn set_control_cycle(&mut self, val: f32) -> Result<(), UART> {
-        assert!(val >= 1.0 && val <= 500.0);
-        self.set_holding(regs::SOUF, val)
+    pub fn set_control_cycle(&mut self, val: u16) -> Result<(), UART> {
+        assert!(val >= 1 && val <= 500);
+        let val = val as f32;
+        self.set_holding(regs::OT, val)
     }
 
     /// Get digital filter (FILT).
@@ -689,25 +704,29 @@ where
     }
 
     /// Get hysteresis band (Hy).
-    pub fn get_hysteresis(&mut self) -> crate::Result<f32, UART> {
-        self.get_holding(regs::HY)
+    pub fn get_hysteresis(&mut self) -> crate::Result<u16, UART> {
+        let val = self.get_holding(regs::HY)?;
+        Ok(val as u16)
     }
 
     /// Set hysteresis band (Hy).
-    pub fn set_hysteresis(&mut self, val: f32) -> Result<(), UART> {
-        assert!(val >= 0.0 && val <= 9999.0);
+    pub fn set_hysteresis(&mut self, val: u16) -> Result<(), UART> {
+        assert!(val <= 9999);
+        let val = val as f32;
         self.set_holding(regs::HY, val)
     }
 
     /// Get input offset (PSb).
-    pub fn get_input_offset(&mut self) -> crate::Result<f32, UART> {
-        self.get_holding(regs::PSB)
+    pub fn get_input_offset(&mut self) -> crate::Result<i16, UART> {
+        let val = self.get_holding(regs::PSB)?;
+        Ok(val as i16)
     }
 
     /// Set input offset (PSb).
-    pub fn set_intput_offset(&mut self, val: f32) -> Result<(), UART> {
-        assert!(val >= -1000.0 && val <= 1000.0);
-        self.set_holding(regs::HY, val)
+    pub fn set_intput_offset(&mut self, val: i16) -> Result<(), UART> {
+        assert!(val >= -1000 && val <= 1000);
+        let val = val as f32;
+        self.set_holding(regs::PSB, val)
     }
 
     /// Get control function (rd).
@@ -735,13 +754,17 @@ where
     }
 
     /// Get unit ID (Id).
-    pub fn get_unit_id(&mut self) -> crate::Result<f32, UART> {
-        self.get_holding(regs::ID)
+    pub fn get_unit_id(&mut self) -> crate::Result<u8, UART> {
+        let val = self.get_holding(regs::ID)?;
+        Ok(val as u8)
     }
 
     /// Set unit ID (Id).
-    pub fn set_unit_id(&mut self, val: f32) -> Result<(), UART> {
-        assert!(val >= 0.0 && val <= 64.0);
+    ///
+    /// NOTE: This reconfigures the temperature controller to use a different unit ID on the Modbus.
+    pub fn set_unit_id(&mut self, val: u8) -> Result<(), UART> {
+        assert!(val >= 0 && val <= 64);
+        let val = val as f32;
         self.set_holding(regs::ID, val)
     }
 
@@ -884,13 +907,13 @@ where
 }
 
 pub type Result<T, UART> =
-    core::result::Result<T, Error<<UART as eh1_0_alpha::serial::ErrorType>::Error>>;
+    core::result::Result<T, Error<<UART as embedded_hal::serial::ErrorType>::Error>>;
 
 #[inline(always)]
 fn try_from_f32<T, UART>(val: f32) -> crate::Result<T, UART>
 where
     T: TryFrom<f32>,
-    UART: eh1_0_alpha::serial::ErrorType,
+    UART: embedded_hal::serial::ErrorType,
 {
     let v = T::try_from(val)
         .map(|v| Ok(v))

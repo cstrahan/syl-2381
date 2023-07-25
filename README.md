@@ -1,6 +1,6 @@
 # syl2381
 
-This crate provides an interface to the [Auber Instruments SYL-2381](https://www.auberins.com/index.php?main_page=product_info&cPath=1&products_id=651) temperature controller.
+This crate provides an interface to the [Auber Instruments SYL-2381](https://www.auberins.com/index.php?main_page=product_info&cPath=1&products_id=651) temperature controller over Modbus RTU.
 
 #### License
 
