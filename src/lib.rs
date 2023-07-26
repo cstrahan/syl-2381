@@ -955,19 +955,18 @@ where
 /// Read an f32 from two consecutive holding register values.
 #[inline(always)]
 fn values_to_f32(d0: u16, d1: u16) -> f32 {
-    let w0 = d0.to_be_bytes();
-    let w1 = d1.to_be_bytes();
-    let fbits = (w0[0] as u32) << 24 | (w0[1] as u32) << 16 | (w1[0] as u32) << 8 | (w1[1] as u32);
-    let val = f32::from_bits(fbits);
-    val
+    let [b0, b1] = d0.to_be_bytes();
+    let [b2, b3] = d1.to_be_bytes();
+
+    f32::from_be_bytes([b0, b1, b2, b3])
 }
 
 /// Splits an f32 into two consecutive holding register values.
 #[inline(always)]
 fn f32_to_values(val: f32) -> [u16; 2] {
-    let bytes = val.to_be_bytes();
-    let d0 = (bytes[0] as u16) << 8 | bytes[1] as u16;
-    let d1 = (bytes[2] as u16) << 8 | bytes[3] as u16;
+    let [b0, b1, b2, b3] = val.to_be_bytes();
+    let d0 = u16::from_be_bytes([b0, b1]);
+    let d1 = u16::from_be_bytes([b2, b3]);
 
     [d0, d1]
 }
