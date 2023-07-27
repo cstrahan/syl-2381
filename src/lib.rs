@@ -808,7 +808,7 @@ where
 
     /// ---------------------------
 
-    /// Get holding param.
+    /// Set holding param.
     ///
     /// All holding params on the SYL-2381 are f32,
     /// encoded as two consecutive values.
@@ -839,7 +839,7 @@ where
         Ok(())
     }
 
-    /// Set holding param.
+    /// Get holding param.
     ///
     /// All holding params on the SYL-2381 are f32,
     /// encoded as two consecutive values.
